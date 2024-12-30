@@ -23,8 +23,8 @@ export async function GET(request: Request) {
       data = await prisma.antrian.findMany({
         where: {
           createdAt: {
-            gte: new Date(`${dateOnly}T00:00:00`),
-            lte: new Date(`${dateOnly}T23:59:59`),
+            gte: new Date(`${dateOnly}T00:00:00Z`).toISOString(),
+            lte: new Date(`${dateOnly}T23:59:59Z`).toISOString(),
           },
           statusAntrian: userid ? "Progress" : "Open",
           ...(type && { layanan: type === "Umum" ? "Layanan Pelanggan" : "Layanan Verifikasi" }),
@@ -64,8 +64,8 @@ export async function PUT(request: Request) {
           assigned: userID,
           statusAntrian: "Progress",
           createdAt: {
-            gte: new Date(`${dateOnly}T00:00:00`),
-            lte: new Date(`${dateOnly}T23:59:59`),
+            gte: new Date(`${dateOnly}T00:00:00Z`).toISOString(),
+            lte: new Date(`${dateOnly}T23:59:59Z`).toISOString(),
           },
         },
       });
@@ -109,8 +109,8 @@ export async function POST(request: Request) {
     const countForDate = await prisma.antrian.count({
       where: {
         createdAt: {
-          gte: new Date(`${dateOnly}T00:00:00`),
-          lte: new Date(`${dateOnly}T23:59:59`),
+          gte: new Date(`${dateOnly}T00:00:00Z`).toISOString(),
+          lte: new Date(`${dateOnly}T23:59:59Z`).toISOString(),
         },
         layanan,
       },
