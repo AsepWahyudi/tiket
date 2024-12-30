@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { format } from 'date-fns';
-
-// Fungsi untuk mendapatkan waktu Jakarta dalam format ISO 8601
-const getJakartaTime = () => {
-  const jakartaTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
-  return new Date(jakartaTime);
-};
-
+import { id as localeID } from 'date-fns/locale'; // For Indonesian formatting
+ 
 // GET Route
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
     const bydate = searchParams.get('bydate') === 'true';
     const userid = searchParams.get('userid');
     const type = searchParams.get('type');
@@ -19,26 +15,26 @@ export async function GET(request: Request) {
     let data;
 
     if (bydate) {
-      const jakartaTime = getJakartaTime();
-      const dateOnly = format(jakartaTime, 'yyyy-MM-dd');
+      // Get Jakarta time and format it for filtering
+      const jakartaTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+      const dateOnly = format(new Date(jakartaTime), 'yyyy-MM-dd');
 
-      const startDate = `${dateOnly}T00:00:00Z`;
-      const endDate = `${dateOnly}T23:59:59Z`;
-
+      // Fetch records where createdAt matches today's date
       data = await prisma.antrian.findMany({
         where: {
           createdAt: {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(`${dateOnly}T00:00:00Z`).toISOString(),
+            lte: new Date(`${dateOnly}T23:59:59Z`).toISOString(),
           },
-          statusAntrian: userid ? 'Progress' : 'Open',
-          ...(type && { layanan: type === 'Umum' ? 'Layanan Pelanggan' : 'Layanan Verifikasi' }),
+          statusAntrian: userid ? "Progress" : "Open",
+          ...(type && { layanan: type === "Umum" ? "Layanan Pelanggan" : "Layanan Verifikasi" }),
           ...(userid && { assigned: userid }),
         },
       });
 
-      data.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      data.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     } else {
+      // Fetch all records if bydate is false
       data = await prisma.antrian.findMany();
     }
 
@@ -54,25 +50,22 @@ export async function PUT(request: Request) {
   try {
     const { antrianID, userID, statusAntrian, operation } = await request.json();
 
-    const jakartaTime = getJakartaTime();
-    const updatedAt = format(jakartaTime, 'yyyy-MM-dd HH:mm:ss');
+    const jakartaTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+    const updatedAt = format(new Date(jakartaTime), 'yyyy-MM-dd HH:mm:ss', { locale: localeID });
 
     if (!antrianID || !userID || typeof statusAntrian === 'undefined') {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const dateOnly = format(jakartaTime, 'yyyy-MM-dd');
-    const startDate = `${dateOnly}T00:00:00Z`;
-    const endDate = `${dateOnly}T23:59:59Z`;
-
     if (operation === 'Ambil') {
+      const dateOnly = format(new Date(jakartaTime), 'yyyy-MM-dd');
       const existingProgressTicket = await prisma.antrian.findFirst({
         where: {
           assigned: userID,
-          statusAntrian: 'Progress',
+          statusAntrian: "Progress",
           createdAt: {
-            gte: startDate,
-            lte: endDate,
+            gte: new Date(`${dateOnly}T00:00:00Z`).toISOString(),
+            lte: new Date(`${dateOnly}T23:59:59Z`).toISOString(),
           },
         },
       });
@@ -109,18 +102,15 @@ export async function POST(request: Request) {
   try {
     const { layanan, kategoriLayanan, statusAntrian } = await request.json();
 
-    const jakartaTime = getJakartaTime();
-    const createdAt = format(jakartaTime, 'yyyy-MM-dd HH:mm:ss');
-    const dateOnly = format(jakartaTime, 'yyyy-MM-dd');
-
-    const startDate = `${dateOnly}T00:00:00Z`;
-    const endDate = `${dateOnly}T23:59:59Z`;
+    const jakartaTime = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+    const createdAt = format(new Date(jakartaTime), 'yyyy-MM-dd HH:mm:ss', { locale: localeID });
+    const dateOnly = format(new Date(jakartaTime), 'yyyy-MM-dd');
 
     const countForDate = await prisma.antrian.count({
       where: {
         createdAt: {
-          gte: startDate,
-          lte: endDate,
+          gte: new Date(`${dateOnly}T00:00:00Z`).toISOString(),
+          lte: new Date(`${dateOnly}T23:59:59Z`).toISOString(),
         },
         layanan,
       },
